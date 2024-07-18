@@ -7,6 +7,7 @@ import (
   "io/ioutil"
   "net/http"
   "os/exec"
+  "time"
 )
 
 type Payload struct { 
@@ -22,32 +23,85 @@ type Response struct {
 
 
 func main() {
-  diff, err := getDiff()
-  if err != nil {
-    fmt.Printf("Error: %s\n", err)
-    return
-  }
+  for {
+    time.Sleep(1 * time.Second)
+    hasChanges, err := hasChanges()
+    if err != nil {
+      fmt.Printf("Error: %s\n", err)
+      return
+    }
 
-  message, err := generateCommitMessage(diff)
-  if err != nil {
-    fmt.Printf("Error: %s\n", err)
-    return
+    if !hasChanges {
+      continue
+    }
+
+    err = addChanges()
+    if err != nil {
+      fmt.Printf("Error: %s\n", err)
+      return
+    }
+
+    diff, err := getDiff()
+    if err != nil {
+      fmt.Printf("Error: %s\n", err)
+      return
+    }
+
+    message, err := generateCommitMessage(diff)
+    if err != nil {
+      fmt.Printf("Error: %s\n", err)
+      return
+    }
+    fmt.Printf(message)
+
+    err = commit(message)
+    if err != nil {
+      fmt.Printf("Error: %s\n", err)
+      return
+    }
   }
-  fmt.Printf(message)
 }
 
-func getDiff() (string, error) {
-  cmd := exec.Command("git", "diff", "--staged")
+func commit(message string) error {
+  _, err := executeCommand("git", "commit", "-m", message)
+  if err != nil {
+    return fmt.Errorf("Error committing: %w", err)
+  }
+  return nil
+}
+
+func addChanges() error {
+  _, err := executeCommand("git", "add", ".")
+  return err
+}
+
+func hasChanges() (bool, error) {
+  output, err := executeCommand("git", "status", "--porcelain")
+  if err != nil {
+    return false, fmt.Errorf("Error checking for changes: %w", err)
+  }
+
+  return len(output) > 0, nil
+}
+
+func executeCommand(command string, args ...string) (string, error) {
+
+  cmd := exec.Command(command, args...)
   var out bytes.Buffer
   cmd.Stdout = &out
   var stderr bytes.Buffer
   cmd.Stderr = &stderr
   err := cmd.Run()
   if err != nil {
-    return "", fmt.Errorf("git diff --staged failed: %w, stderr: %s", err, stderr.String())
+    return "", fmt.Errorf("command (%s) failed: %w, stderr: %s", command, err, stderr.String())
   }
 
   return out.String(), nil
+
+}
+
+func getDiff() (string, error) {
+  return executeCommand("git", "diff", "--staged")
 }
 
 func generateCommitMessage(diff string) (string, error) {
