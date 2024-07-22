@@ -64,7 +64,7 @@ func main() {
 }
 
 func push() error {
-	_, err := executeCommand("git", "push", "-u", "main")
+	_, err := executeCommand("git", "push", "-u", "origin", "main")
 	if err != nil {
 		return fmt.Errorf("error pushing: %w", err)
 	}
