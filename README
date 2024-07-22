@@ -1,0 +1,6 @@
+Tired of moving too slow. push_on_save ensures that as you save your changes are pushed to remote!
+
+Setup:
+1. Ensure ollama is running with llama3 on port 11435
+2. Clone this repository
+3. Run `go run .`
