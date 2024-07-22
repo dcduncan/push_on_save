@@ -55,7 +55,21 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		err = push()
+		if err != nil {
+			panic(err)
+		}
 	}
+}
+
+func push() error {
+	_, err := executeCommand("git", "push", "-u", "main")
+	if err != nil {
+		return fmt.Errorf("error pushing: %w", err)
+	}
+
+	return nil
 }
 
 func commit(message string) error {
